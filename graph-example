@@ -1,0 +1,41 @@
+#!/bin/bash
+edgePath=hdfs://172.18.0.2:9000/data/cora/EdgeTable
+featurePath=hdfs://172.18.0.2:9000/data/cora/FeatureTable
+labelPath=hdfs://172.18.0.2:9000/data/cora/LabelTable
+predictOutputPath=hdfs://172.18.0.2:9000/predictOutputPath
+embeddingPath=hdfs://172.18.0.2:9000/embeddingPath
+outputModelPath=hdfs://172.18.0.2:9000/outputModelPath
+
+source ./spark-on-angel-env.sh
+JAVA_LIBRARY_PATH=pytorch-on-angel-0.2.0-jar-with-dependencies.jar:pytorch-on-angel-0.2.0.jar
+torchlib=torch-lib/libpthreadpool.a,torch-lib/libcpuinfo_internals.a,torch-lib/libCaffe2_perfkernels_avx2.a,torch-lib/libgmock.a,torch-lib/libprotoc.a,torch-lib/libnnpack.a,torch-lib/libgtest.a,torch-lib/libpytorch_qnnpack.a,torch-lib/libcaffe2_detectron_ops.so,torch-lib/libCaffe2_perfkernels_avx512.a,torch-lib/libgomp-753e6e92.so.1,torch-lib/libgloo.a,torch-lib/libonnx.a,torch-lib/libtorch_angel.so,torch-lib/libbenchmark_main.a,torch-lib/libcaffe2_protos.a,torch-lib/libgtest_main.a,torch-lib/libprotobuf-lite.a,torch-lib/libasmjit.a,torch-lib/libCaffe2_perfkernels_avx.a,torch-lib/libonnx_proto.a,torch-lib/libfoxi_loader.a,torch-lib/libfbgemm.a,torch-lib/libc10.so,torch-lib/libclog.a,torch-lib/libbenchmark.a,torch-lib/libgmock_main.a,torch-lib/libnnpack_reference_layers.a,torch-lib/libcaffe2_module_test_dynamic.so,torch-lib/libqnnpack.a,torch-lib/libprotobuf.a,torch-lib/libc10d.a,torch-lib/libtorch.so,torch-lib/libcpuinfo.a,torch-lib/libstdc++.so.6,torch-lib/libmkldnn.a
+
+$SPARK_HOME/bin/spark-submit \
+    --master yarn\
+    --deploy-mode cluster \
+    --conf spark.ps.instances=1 \
+    --conf spark.ps.cores=1 \
+    --conf spark.ps.jars=$SONA_ANGEL_JARS \
+    --conf spark.ps.memory=3g \
+    --conf spark.ps.log.level=INFO \
+    --conf spark.driver.extraJavaOptions=-Djava.library.path=$JAVA_LIBRARY_PATH:. \
+    --conf spark.executor.extraJavaOptions=-Djava.library.path=$JAVA_LIBRARY_PATH:. \
+    --conf spark.executor.extraLibraryPath=. \
+    --conf spark.driver.extraLibraryPath=. \
+    --conf spark.executorEnv.OMP_NUM_THREADS=1 \
+    --conf spark.executorEnv.MKL_NUM_THREADS=1 \
+    --queue default \
+    --name "graphsage angel" \
+    --jars $SONA_SPARK_JARS  \
+    --files $torchlib \
+    --driver-memory 3g \
+    --num-executors 1 \
+    --executor-cores 1 \
+    --executor-memory 3g \
+    --class com.tencent.angel.pytorch.examples.supervised.GCNExample pytorch-on-angel-0.2.0.jar \
+    edgePath:$edgePath featurePath:$featurePath labelPath:$labelPath \
+    trainInput:$input batchSize:128 torchModelPath:graphsage_cora.pt featureDim:1433 \
+    stepSize:0.01 optimizer:adam numEpoch:10 testRatio:0.5 \
+    numPartitions:50 format:dense samples:10 batchSize:128 \
+    predictOutputPath:$predictOutputPath embeddingPath:$embeddingPath outputModelPath:$outputModelPath \
+    actionType:train numBatchInit:5 \
