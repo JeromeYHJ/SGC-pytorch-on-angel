@@ -34,7 +34,7 @@ $SPARK_HOME/bin/spark-submit \
     --executor-memory 3g \
     --class com.tencent.angel.pytorch.examples.supervised.GCNExample pytorch-on-angel-0.2.0.jar \
     edgePath:$edgePath featurePath:$featurePath labelPath:$labelPath \
-    trainInput:$input batchSize:128 torchModelPath:graphsage_cora.pt featureDim:1433 \
+    torchModelPath:graphsage_cora.pt featureDim:1433 \
     stepSize:0.01 optimizer:adam numEpoch:10 testRatio:0.5 \
     numPartitions:50 format:dense samples:10 batchSize:128 \
     predictOutputPath:$predictOutputPath embeddingPath:$embeddingPath outputModelPath:$outputModelPath \
